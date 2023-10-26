@@ -8,7 +8,7 @@ import configparser
 from datetime import datetime
 
 import requests
-from selenium import webdriver
+from seleniumwire import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as Wait
@@ -36,7 +36,7 @@ PUSH_USER = config['PUSHOVER']['PUSH_USER']
 LOCAL_USE = config['CHROMEDRIVER'].getboolean('LOCAL_USE')
 HUB_ADDRESS = config['CHROMEDRIVER']['HUB_ADDRESS']
 
-REGEX_CONTINUE = "//a[contains(text(),'Continuar')]"
+REGEX_CONTINUE = "//a[contains(text(),'Continue')]"
 
 
 # def MY_CONDITION(month, day): return int(month) == 11 and int(day) >= 5
@@ -93,23 +93,9 @@ driver = get_driver()
 
 def login():
     # Bypass reCAPTCHA
-    driver.get(f"https://ais.usvisa-info.com/{COUNTRY_CODE}/niv")
-    time.sleep(STEP_TIME)
-    a = driver.find_element(By.XPATH, '//a[@class="down-arrow bounce"]')
-    a.click()
-    time.sleep(STEP_TIME)
+    driver.get(f"https://ais.usvisa-info.com/{COUNTRY_CODE}/niv/users/sign_in")
 
-    print("Login start...")
-    href = driver.find_element(By.XPATH, '//*[@id="header"]/nav/div[1]/div[1]/div[2]/div[1]/ul/li[3]/a')
-   
-    href.click()
-    time.sleep(STEP_TIME)
     Wait(driver, 60).until(EC.presence_of_element_located((By.NAME, "commit")))
-
-    print("\tclick bounce")
-    a = driver.find_element(By.XPATH, '//a[@class="down-arrow bounce"]')
-    a.click()
-    time.sleep(STEP_TIME)
 
     do_login_action()
 
@@ -141,7 +127,14 @@ def do_login_action():
 
 
 def get_date():
+    driver.request_interceptor = interceptor
     driver.get(DATE_URL)
+    headers = {
+        "User-Agent": driver.execute_script("return navigator.userAgent;"),
+        "X-Requested-With": "XMLHttpRequest",
+        "Cookie": "_yatri_session=" + driver.get_cookie("_yatri_session")["value"]
+    }
+
     if not is_logged_in():
         login()
         return get_date()
